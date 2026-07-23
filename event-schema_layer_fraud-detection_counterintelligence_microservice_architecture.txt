@@ -1,0 +1,385 @@
+Full event‑schema layer** for the integrated Fraud‑Detection + Counterintelligence (CI) microservice architecture.  
+Every schema is **event‑driven**, **stateless**, and designed for **planetary‑scale identity security**, with clear boundaries between fraud signals, biometric anomalies, CI triggers, leak‑inference events, canary propagation, and governance.
+
+I’ll map each schema to the microservice that emits it, and I’ll embed links on the key concepts so you can jump deeper into any subsystem.
+
+---
+
+# Core Takeaway  
+A **complete inter‑service event contract system**:
+
+- Fraud pipeline → emits anomaly events  
+- CI pipeline → consumes anomaly events, emits intelligence events  
+- Canary pipeline → emits deception fingerprints  
+- Governance pipeline → logs everything immutably
+
+This is the backbone of a **planetary identity‑security nervous system**.
+
+---
+
+# 1. Event Schema Catalog (Fraud + CI)
+
+Each schema is written in a **neutral JSON‑style structure** (not a file), ready for message buses like Kafka, NATS, or Pulsar.
+
+---
+
+# A. Fraud Ingestion Events
+
+## 1. `IdentityRecordIngested`
+Emitted by: Identity Ingestion Service (`ID_IN`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "identity_id": "string",
+  "provenance": "string",
+  "record": {
+    "name": "string",
+    "dob": "string",
+    "nationality": "string",
+    "attributes": {}
+  }
+}
+```
+
+Key concept: **identity ingestion**
+
+---
+
+## 2. `DocumentArtifactIngested`
+Emitted by: Document Ingestion Service (`DOC_IN`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "document_id": "string",
+  "identity_id": "string",
+  "metadata": {
+    "type": "passport|license|id",
+    "issuer": "string",
+    "issue_date": "string"
+  }
+}
+```
+
+Key concept: **document ingestion**
+
+---
+
+## 3. `BehaviorEventIngested`
+Emitted by: Behavioral Ingestion Service (`BEHAV_IN`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "identity_id": "string",
+  "behavior": {
+    "event_type": "string",
+    "location": "string",
+    "time": "string",
+    "metadata": {}
+  }
+}
+```
+
+Key concept: **behavior ingestion**
+
+---
+
+## 4. `BiometricTemplateIngested`
+Emitted by: Biometric Ingestion Service (`BIO_IN`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "identity_id": "string",
+  "biometric": {
+    "template_id": "string",
+    "modality": "face|fingerprint|iris|retina",
+    "hash": "string",
+    "enclave_ref": "string"
+  }
+}
+```
+
+Key concept: **biometric ingestion**
+
+---
+
+# B. Fraud Signal Events
+
+## 5. `FraudSignalGenerated`
+Emitted by: Fraud Signal Services (`DATA_CONSIST`, `DOC_AUTH`, `BEHAV_ANOM`, `MULTI_ID_FACE`, `SINGLE_ID_FACE`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "identity_id": "string",
+  "signal_type": "data_consistency|doc_auth|behavior_anomaly|multi_id_face|single_id_face",
+  "confidence": "0-1",
+  "details": {}
+}
+```
+
+Key concept: **fraud signals**
+
+---
+
+# C. Risk Scoring Events
+
+## 6. `RiskScoreComputed`
+Emitted by: Risk Aggregation Service (`RISK_AGG`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "identity_id": "string",
+  "risk_score": "0-100",
+  "signals": []
+}
+```
+
+Key concept: **risk aggregation**
+
+---
+
+# D. Case Management Events
+
+## 7. `FraudCaseUpdated`
+Emitted by: Case Management Service (`CASE_MGMT`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "case_id": "string",
+  "identity_id": "string",
+  "risk_score": "0-100",
+  "status": "open|updated|closed",
+  "evidence": []
+}
+```
+
+Key concept: **fraud case management**
+
+---
+
+# E. CI Routing Events
+
+## 8. `CITriggerEvent`
+Emitted by: CI Relevance Evaluation Service (`CI_RELEVANCE_CHECK`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "identity_id": "string",
+  "ci_score": "0-100",
+  "reason": [],
+  "context": {
+    "attack_window": "boolean",
+    "geo_radius": "boolean",
+    "protected_identity": "boolean"
+  }
+}
+```
+
+Key concept: **CI relevance**
+
+---
+
+# F. CI Workflow Events
+
+## 9. `CISessionStarted`
+Emitted by: CI Session Orchestrator (`CI_TRIGGER`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "identity_id": "string",
+  "context": {}
+}
+```
+
+Key concept: **CI trigger**
+
+---
+
+## 10. `LeakSignatureInferred`
+Emitted by: Leak Inference Service (`LEAK_INFER`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "leak_signature": {
+    "intel_elements": [],
+    "precision": "0-1"
+  }
+}
+```
+
+Key concept: **leak inference**
+
+---
+
+## 11. `CompartmentSetIdentified`
+Emitted by: Compartment Mapping Service (`COMPART_MAP`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "compartments": []
+}
+```
+
+Key concept: **compartment mapping**
+
+---
+
+## 12. `SuspectGraphBuilt`
+Emitted by: Suspect Graph Builder (`CANDIDATE_SET`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "suspects": [],
+  "graph": {}
+}
+```
+
+Key concept: **suspect graph**
+
+---
+
+## 13. `CanaryPlanGenerated`
+Emitted by: Canary Injection Service (`CANARY_INJECT`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "canaries": [
+    {
+      "compartment_id": "string",
+      "fingerprint": "string"
+    }
+  ]
+}
+```
+
+Key concept: **canary injection**
+
+---
+
+## 14. `LeakPathObserved`
+Emitted by: Leak Propagation Observer (`OBSERVE_PROPAGATION`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "leaked_fingerprint": "string",
+  "compartment_id": "string"
+}
+```
+
+Key concept: **leak propagation**
+
+---
+
+## 15. `HostileNetworkExpanded`
+Emitted by: Network Expansion Service (`NETWORK_EXPAND`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "network_map": {}
+}
+```
+
+Key concept: **network expansion**
+
+---
+
+## 16. `CIDecisionIssued`
+Emitted by: CI Decision Engine (`CI_DECISION`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "ci_session_id": "string",
+  "action": "exploit|neutralize",
+  "justification": [],
+  "targets": []
+}
+```
+
+Key concept: **CI decision**
+
+---
+
+# G. Governance Events
+
+## 17. `AuditLogEntry`
+Emitted by: Audit Logging Service (`AUDIT_LOG`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "node": "string",
+  "inputs": {},
+  "outputs": {},
+  "policy": "string"
+}
+```
+
+Key concept: **audit logging**
+
+---
+
+## 18. `PolicyEnforcementDecision`
+Emitted by: Policy Enforcement Service (`POLICY_ENF`)
+
+```json
+{
+  "event_id": "uuid",
+  "timestamp": "ISO-8601",
+  "request": {},
+  "authorized": "boolean",
+  "policy_id": "string"
+}
+```
+
+Key concept: **policy enforcement**
+
+---
+
+# 2. The Non‑Obvious Insight  
+The system has **complete event‑level observability**:
+
+- Fraud → emits anomaly events  
+- CI → emits intelligence events  
+- Canary → emits deception events  
+- Governance → emits compliance events
+
+This is the backbone of a **planetary‑scale counterintelligence nervous system**.
