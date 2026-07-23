@@ -1,0 +1,94 @@
+### CI decision tree for multi‑ID / single‑face anomalies
+
+Here’s a compact, formal decision tree you can wire directly into your CI pipeline logic. It assumes:
+
+- A **multi‑ID/single‑face** anomaly has been detected.  
+- You have access to **context** (protected identity flags, time/geo windows, prior CI events).  
+
+---
+
+#### Root: Multi‑ID / Single‑Face anomaly detected
+
+**Q1: Is the anomaly proximate to any protected official or protected asset?**
+
+- **Yes → go to Q2**  
+- **No → classify as fraud‑only; keep in fraud pipeline, log, monitor.**
+
+---
+
+**Q2: Is there temporal or geographic proximity to a known CI event (e.g., failed attack, prior probing)?**
+
+- **Yes → go to Q3**  
+- **No → CI relevance score lower, but still CI‑candidate; go to Q3 with reduced weight.**
+
+---
+
+**Q3: Does the identity or cluster intersect any known sensitive compartments (VIP movement, secure facilities, classified systems)?**
+
+- **Yes → mark as CI‑relevant; go to Q4.**  
+- **No → keep as “borderline CI”; route to enhanced fraud monitoring, but do not start full CI session unless repeated.**
+
+---
+
+**Q4: CI scoring threshold**
+
+Compute `ci_score` using your rule set (protected flag, proximity, risk score, anomaly confidence).
+
+- **If `ci_score >= CI_RELEVANCE_MIN_SCORE` → start CI session (CI_TRIGGER).**  
+- **Else → retain in fraud pipeline, tag as “watchlist anomaly”.**
+
+---
+
+Once CI session starts:
+
+#### Branch A: Leak‑driven reconnaissance vs blind probing
+
+**Q5: Does leak inference (LEAK_INFER) suggest the actor had access to non‑public biometric or movement data?**
+
+- **Yes → treat as *leak‑driven reconnaissance*.**
+  - Run full CI DAG:
+    - COMPART_MAP → CANDIDATE_SET → CANARY_INJECT → OBSERVE_PROPAGATION → NETWORK_EXPAND → CI_DECISION.
+- **No → treat as *blind probing*.**
+  - CI_DECISION leans toward:
+    - Exploit minimally (observe pattern),  
+    - Strengthen fraud controls,  
+    - Avoid heavy canary ops unless pattern escalates.
+
+---
+
+#### Branch B: Exploit vs neutralize
+
+At `CI_DECISION`, use three core questions:
+
+**Q6: Is the suspected leak source high‑value (deep insider, critical system)?**
+
+- **Yes → prefer EXPLOIT (keep mole, expand network) if risk is tolerable.**  
+- **No → neutralize earlier; leak value is lower.**
+
+**Q7: Is the hostile network sufficiently mapped to justify a takedown?**
+
+- **Yes → NEUTRALIZE (burn mole, arrests, lockdown, possible public narrative).**  
+- **No → continue EXPLOIT with additional canaries and observation cycles.**
+
+**Q8: Is the political/operational risk of continued exploitation acceptable?**
+
+- **No → NEUTRALIZE even if mapping is incomplete.**  
+- **Yes → EXPLOIT until mapping reaches predefined completeness threshold.**
+
+---
+
+#### Summary structure (compressed)
+
+- Detect multi‑ID/single‑face →  
+- Check protected proximity →  
+- Check CI event proximity →  
+- Check compartment intersection →  
+- Score CI relevance →  
+  - If below threshold → fraud only / watchlist  
+  - If above threshold → CI session  
+    - Leak‑driven vs blind probing →  
+    - If leak‑driven → full CI DAG + canaries  
+    - CI_DECISION → exploit vs neutralize based on:
+      - Leak value  
+      - Network mapping completeness  
+      - Risk tolerance
