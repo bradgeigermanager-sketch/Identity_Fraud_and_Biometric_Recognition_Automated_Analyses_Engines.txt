@@ -1,0 +1,380 @@
+### 1. `IS_CI_RELEVANT` rule set and scoring function
+
+We’ll treat CI relevance as a **score** with hard gates. Pseudocode:
+
+```pseudo
+function IS_CI_RELEVANT(identity, signals, risk_score, context):
+
+    score = 0
+
+    # 1. Linkage to protected / sensitive entities
+    if identity.is_protected_official:
+        score += 40
+
+    if identity.linked_to_protected_asset:   # critical infra, intel, defense
+        score += 25
+
+    # 2. Biometric anomaly patterns
+    if signals.contains("multi_id_single_face_high_conf"):
+        score += 20
+
+    if signals.contains("single_id_multi_face_high_conf"):
+        score += 20
+
+    if signals.contains("biometric_presence_near_failed_attack_window"):
+        score += 30
+
+    # 3. Temporal / spatial proximity to CI events
+    if context.within_failed_attack_time_window:
+        score += 20
+
+    if context.within_failed_attack_geo_radius:
+        score += 15
+
+    # 4. Fraud risk level
+    if risk_score >= RISK_THRESHOLD_CRITICAL:
+        score += 15
+    elif risk_score >= RISK_THRESHOLD_HIGH:
+        score += 10
+
+    # 5. Policy gates (hard constraints)
+    if not POLICY_ENF.allows_ci_routing(identity, signals, context):
+        return false
+
+    # 6. Final decision
+    return score >= CI_RELEVANCE_MIN_SCORE
+```
+
+Example thresholds:
+
+- `RISK_THRESHOLD_HIGH = 70`  
+- `RISK_THRESHOLD_CRITICAL = 85`  
+- `CI_RELEVANCE_MIN_SCORE = 60`
+
+Interpretation:
+
+- Protected official + biometric anomaly + attack proximity → almost always CI‑relevant.  
+- Ordinary identity + generic fraud signals → stays in fraud pipeline only.  
+- Policy gate is a **hard stop**: CI routing only for legally authorized, high‑sensitivity contexts.
+
+---
+
+### 2. YAML spec for integrated fraud + CI DAG
+
+```yaml
+dag:
+  name: planetary_identity_fraud_ci_integrated
+  version: "1.0"
+
+  nodes:
+
+    # -------------------------
+    # INGESTION LAYER
+    # -------------------------
+    - id: ID_IN
+      type: ingest
+      inputs: [identity_record]
+      outputs: [identity_record]
+      triggers: [identity_created, identity_updated]
+
+    - id: DOC_IN
+      type: ingest
+      inputs: [document_artifact]
+      outputs: [document_artifact]
+      triggers: [document_added, document_updated]
+
+    - id: BEHAV_IN
+      type: ingest
+      inputs: [behavior_event]
+      outputs: [behavior_event]
+      triggers: [transaction_event, access_event]
+
+    - id: BIO_IN
+      type: ingest
+      inputs: [biometric_template]
+      outputs: [biometric_template]
+      triggers: [biometric_enrolled, biometric_updated]
+
+    # -------------------------
+    # FRAUD SIGNAL LAYER
+    # -------------------------
+    - id: DATA_CONSIST
+      type: compute
+      inputs: [identity_record, document_artifact, behavior_event]
+      outputs: [fraud_signal]
+      function: CHECK_DATA_CONSISTENCY
+
+    - id: DOC_AUTH
+      type: compute
+      inputs: [document_artifact]
+      outputs: [fraud_signal]
+      function: CHECK_DOCUMENT_AUTHENTICITY
+
+    - id: BEHAV_ANOM
+      type: compute
+      inputs: [behavior_event]
+      outputs: [fraud_signal]
+      function: CHECK_BEHAVIOR_ANOMALIES
+
+    - id: MULTI_ID_FACE
+      type: compute
+      inputs: [biometric_template]
+      outputs: [fraud_signal]
+      function: CHECK_MULTI_ID_SINGLE_FACE
+
+    - id: SINGLE_ID_FACE
+      type: compute
+      inputs: [biometric_template]
+      outputs: [fraud_signal]
+      function: CHECK_SINGLE_ID_MULTI_FACE
+
+    # -------------------------
+    # RISK SCORING LAYER
+    # -------------------------
+    - id: RISK_AGG
+      type: compute
+      inputs: [fraud_signal]
+      outputs: [identity_risk_score]
+      function: COMPUTE_RISK_SCORE
+
+    # -------------------------
+    # CASE MANAGEMENT LAYER
+    # -------------------------
+    - id: CASE_MGMT
+      type: decision
+      inputs: [identity_record, identity_risk_score, fraud_signal]
+      outputs: [fraud_case]
+      function: OPEN_OR_UPDATE_FRAUD_CASE
+
+    # -------------------------
+    # CI RELEVANCE CHECK
+    # -------------------------
+    - id: CI_RELEVANCE_CHECK
+      type: decision
+      inputs: [identity_record, identity_risk_score, fraud_signal, ci_context]
+      outputs: [ci_trigger_event]
+      function: IS_CI_RELEVANT
+
+    # -------------------------
+    # CI DAG NODES
+    # -------------------------
+    - id: CI_TRIGGER
+      type: event
+      inputs: [ci_trigger_event]
+      outputs: [ci_session]
+      function: START_CI_SESSION
+
+    - id: LEAK_INFER
+      type: compute
+      inputs: [ci_session, fraud_case, fraud_signal]
+      outputs: [leak_signature]
+      function: INFER_LEAK_PATH
+
+    - id: COMPART_MAP
+      type: compute
+      inputs: [leak_signature, internal_compartments]
+      outputs: [compartment_set]
+      function: MAP_COMPARTMENTS
+
+    - id: CANDIDATE_SET
+      type: compute
+      inputs: [compartment_set, access_logs]
+      outputs: [suspect_graph]
+      function: BUILD_SUSPECT_GRAPH
+
+    - id: CANARY_INJECT
+      type: compute
+      inputs: [compartment_set, suspect_graph]
+      outputs: [canary_plan]
+      function: GENERATE_CANARY_FINGERPRINTS
+
+    - id: OBSERVE_PROPAGATION
+      type: compute
+      inputs: [canary_plan, external_intel_streams]
+      outputs: [leak_path_identified]
+      function: OBSERVE_LEAK_PROPAGATION
+
+    - id: NETWORK_EXPAND
+      type: compute
+      inputs: [leak_path_identified, external_intel_streams]
+      outputs: [hostile_network_map]
+      function: EXPAND_HOSTILE_NETWORK
+
+    - id: CI_DECISION
+      type: decision
+      inputs: [hostile_network_map, leak_path_identified, policy_constraints]
+      outputs: [ci_action_plan]
+      function: DECIDE_EXPLOIT_OR_NEUTRALIZE
+
+    # -------------------------
+    # GOVERNANCE LAYER
+    # -------------------------
+    - id: AUDIT_LOG
+      type: log
+      inputs: [node_execution_event]
+      outputs: [audit_log_entry]
+      function: LOG_AUDIT
+
+    - id: POLICY_ENF
+      type: guard
+      inputs: [execution_request, access_policy]
+      outputs: [execution_authorized]
+      function: ENFORCE_POLICY
+
+  edges:
+
+    # Fraud DAG edges
+    - from: ID_IN
+      to: DATA_CONSIST
+    - from: DOC_IN
+      to: DATA_CONSIST
+    - from: DOC_IN
+      to: DOC_AUTH
+    - from: BEHAV_IN
+      to: BEHAV_ANOM
+    - from: BIO_IN
+      to: MULTI_ID_FACE
+    - from: BIO_IN
+      to: SINGLE_ID_FACE
+
+    - from: DATA_CONSIST
+      to: RISK_AGG
+    - from: DOC_AUTH
+      to: RISK_AGG
+    - from: BEHAV_ANOM
+      to: RISK_AGG
+    - from: MULTI_ID_FACE
+      to: RISK_AGG
+    - from: SINGLE_ID_FACE
+      to: RISK_AGG
+
+    - from: RISK_AGG
+      to: CASE_MGMT
+
+    # CI routing edge
+    - from: RISK_AGG
+      to: CI_RELEVANCE_CHECK
+
+    # CI DAG edges
+    - from: CI_RELEVANCE_CHECK
+      to: CI_TRIGGER
+
+    - from: CI_TRIGGER
+      to: LEAK_INFER
+
+    - from: LEAK_INFER
+      to: COMPART_MAP
+
+    - from: COMPART_MAP
+      to: CANDIDATE_SET
+
+    - from: CANDIDATE_SET
+      to: CANARY_INJECT
+
+    - from: CANARY_INJECT
+      to: OBSERVE_PROPAGATION
+
+    - from: OBSERVE_PROPAGATION
+      to: NETWORK_EXPAND
+
+    - from: NETWORK_EXPAND
+      to: CI_DECISION
+
+    # Governance edges
+    - from: CI_DECISION
+      to: AUDIT_LOG
+    - from: CASE_MGMT
+      to: AUDIT_LOG
+    - from: RISK_AGG
+      to: AUDIT_LOG
+
+    - from: POLICY_ENF
+      to: ID_IN
+    - from: POLICY_ENF
+      to: DOC_IN
+    - from: POLICY_ENF
+      to: BEHAV_IN
+    - from: POLICY_ENF
+      to: BIO_IN
+    - from: POLICY_ENF
+      to: CI_TRIGGER
+```
+
+---
+
+### 3. JSON spec (same DAG, machine-readable)
+
+```json
+{
+  "dag": {
+    "name": "planetary_identity_fraud_ci_integrated",
+    "version": "1.0",
+    "nodes": [
+      { "id": "ID_IN", "type": "ingest", "inputs": ["identity_record"], "outputs": ["identity_record"], "triggers": ["identity_created", "identity_updated"] },
+      { "id": "DOC_IN", "type": "ingest", "inputs": ["document_artifact"], "outputs": ["document_artifact"], "triggers": ["document_added", "document_updated"] },
+      { "id": "BEHAV_IN", "type": "ingest", "inputs": ["behavior_event"], "outputs": ["behavior_event"], "triggers": ["transaction_event", "access_event"] },
+      { "id": "BIO_IN", "type": "ingest", "inputs": ["biometric_template"], "outputs": ["biometric_template"], "triggers": ["biometric_enrolled", "biometric_updated"] },
+
+      { "id": "DATA_CONSIST", "type": "compute", "inputs": ["identity_record", "document_artifact", "behavior_event"], "outputs": ["fraud_signal"], "function": "CHECK_DATA_CONSISTENCY" },
+      { "id": "DOC_AUTH", "type": "compute", "inputs": ["document_artifact"], "outputs": ["fraud_signal"], "function": "CHECK_DOCUMENT_AUTHENTICITY" },
+      { "id": "BEHAV_ANOM", "type": "compute", "inputs": ["behavior_event"], "outputs": ["fraud_signal"], "function": "CHECK_BEHAVIOR_ANOMALIES" },
+      { "id": "MULTI_ID_FACE", "type": "compute", "inputs": ["biometric_template"], "outputs": ["fraud_signal"], "function": "CHECK_MULTI_ID_SINGLE_FACE" },
+      { "id": "SINGLE_ID_FACE", "type": "compute", "inputs": ["biometric_template"], "outputs": ["fraud_signal"], "function": "CHECK_SINGLE_ID_MULTI_FACE" },
+
+      { "id": "RISK_AGG", "type": "compute", "inputs": ["fraud_signal"], "outputs": ["identity_risk_score"], "function": "COMPUTE_RISK_SCORE" },
+
+      { "id": "CASE_MGMT", "type": "decision", "inputs": ["identity_record", "identity_risk_score", "fraud_signal"], "outputs": ["fraud_case"], "function": "OPEN_OR_UPDATE_FRAUD_CASE" },
+
+      { "id": "CI_RELEVANCE_CHECK", "type": "decision", "inputs": ["identity_record", "identity_risk_score", "fraud_signal", "ci_context"], "outputs": ["ci_trigger_event"], "function": "IS_CI_RELEVANT" },
+
+      { "id": "CI_TRIGGER", "type": "event", "inputs": ["ci_trigger_event"], "outputs": ["ci_session"], "function": "START_CI_SESSION" },
+      { "id": "LEAK_INFER", "type": "compute", "inputs": ["ci_session", "fraud_case", "fraud_signal"], "outputs": ["leak_signature"], "function": "INFER_LEAK_PATH" },
+      { "id": "COMPART_MAP", "type": "compute", "inputs": ["leak_signature", "internal_compartments"], "outputs": ["compartment_set"], "function": "MAP_COMPARTMENTS" },
+      { "id": "CANDIDATE_SET", "type": "compute", "inputs": ["compartment_set", "access_logs"], "outputs": ["suspect_graph"], "function": "BUILD_SUSPECT_GRAPH" },
+      { "id": "CANARY_INJECT", "type": "compute", "inputs": ["compartment_set", "suspect_graph"], "outputs": ["canary_plan"], "function": "GENERATE_CANARY_FINGERPRINTS" },
+      { "id": "OBSERVE_PROPAGATION", "type": "compute", "inputs": ["canary_plan", "external_intel_streams"], "outputs": ["leak_path_identified"], "function": "OBSERVE_LEAK_PROPAGATION" },
+      { "id": "NETWORK_EXPAND", "type": "compute", "inputs": ["leak_path_identified", "external_intel_streams"], "outputs": ["hostile_network_map"], "function": "EXPAND_HOSTILE_NETWORK" },
+      { "id": "CI_DECISION", "type": "decision", "inputs": ["hostile_network_map", "leak_path_identified", "policy_constraints"], "outputs": ["ci_action_plan"], "function": "DECIDE_EXPLOIT_OR_NEUTRALIZE" },
+
+      { "id": "AUDIT_LOG", "type": "log", "inputs": ["node_execution_event"], "outputs": ["audit_log_entry"], "function": "LOG_AUDIT" },
+      { "id": "POLICY_ENF", "type": "guard", "inputs": ["execution_request", "access_policy"], "outputs": ["execution_authorized"], "function": "ENFORCE_POLICY" }
+    ],
+    "edges": [
+      { "from": "ID_IN", "to": "DATA_CONSIST" },
+      { "from": "DOC_IN", "to": "DATA_CONSIST" },
+      { "from": "DOC_IN", "to": "DOC_AUTH" },
+      { "from": "BEHAV_IN", "to": "BEHAV_ANOM" },
+      { "from": "BIO_IN", "to": "MULTI_ID_FACE" },
+      { "from": "BIO_IN", "to": "SINGLE_ID_FACE" },
+
+      { "from": "DATA_CONSIST", "to": "RISK_AGG" },
+      { "from": "DOC_AUTH", "to": "RISK_AGG" },
+      { "from": "BEHAV_ANOM", "to": "RISK_AGG" },
+      { "from": "MULTI_ID_FACE", "to": "RISK_AGG" },
+      { "from": "SINGLE_ID_FACE", "to": "RISK_AGG" },
+
+      { "from": "RISK_AGG", "to": "CASE_MGMT" },
+      { "from": "RISK_AGG", "to": "CI_RELEVANCE_CHECK" },
+
+      { "from": "CI_RELEVANCE_CHECK", "to": "CI_TRIGGER" },
+      { "from": "CI_TRIGGER", "to": "LEAK_INFER" },
+      { "from": "LEAK_INFER", "to": "COMPART_MAP" },
+      { "from": "COMPART_MAP", "to": "CANDIDATE_SET" },
+      { "from": "CANDIDATE_SET", "to": "CANARY_INJECT" },
+      { "from": "CANARY_INJECT", "to": "OBSERVE_PROPAGATION" },
+      { "from": "OBSERVE_PROPAGATION", "to": "NETWORK_EXPAND" },
+      { "from": "NETWORK_EXPAND", "to": "CI_DECISION" },
+
+      { "from": "CI_DECISION", "to": "AUDIT_LOG" },
+      { "from": "CASE_MGMT", "to": "AUDIT_LOG" },
+      { "from": "RISK_AGG", "to": "AUDIT_LOG" },
+
+      { "from": "POLICY_ENF", "to": "ID_IN" },
+      { "from": "POLICY_ENF", "to": "DOC_IN" },
+      { "from": "POLICY_ENF", "to": "BEHAV_IN" },
+      { "from": "POLICY_ENF", "to": "BIO_IN" },
+      { "from": "POLICY_ENF", "to": "CI_TRIGGER" }
+    ]
+  }
+}
+```
