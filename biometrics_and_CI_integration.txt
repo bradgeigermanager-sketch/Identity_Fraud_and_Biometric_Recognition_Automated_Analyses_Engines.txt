@@ -1,0 +1,137 @@
+### High-level integration
+
+| Layer | Existing role | CI extension |
+|-------|---------------|-------------|
+| Biometrics | Detect synthetic/stolen IDs via multi-modal signals | Flag high-value identities as CI-relevant |
+| Fraud DAG | Aggregate signals, open cases | Route specific cases into CI branch |
+| CI DAG | Trace leaks, run canaries, map hostile networks | Use biometric-linked events as anchors for leak analysis |
+
+You’re basically fusing three things:
+
+- Multi‑modal biometrics (face, fingerprint, iris, retina)  
+- Fraud‑detection pipeline (signals → risk → cases)  
+- Counterintelligence DAG (leak inference → canaries → network mapping)
+
+The result: **biometric anomalies become CI triggers**, not just fraud flags.
+
+---
+
+### 1. Where biometrics feed CI
+
+You already have fraud functions like:
+
+- **CHECK_MULTI_ID_SINGLE_FACE** — same face across multiple identities  
+- **CHECK_SINGLE_ID_MULTI_FACE** — multiple faces tied to one identity  
+- Plus behavioral/document signals.
+
+For CI, certain patterns are not just “fraud” but **intelligence‑significant**:
+
+- **High‑confidence multi‑ID/single‑face clusters** around sensitive officials or protected identities.  
+- **Sudden appearance of a hidden official’s biometric template** in an unexpected context (e.g., a remote checkpoint, foreign system).  
+- **Biometric reuse** in proximity to the failed attack (same face, different ID, same region/time).
+
+These become **CI‑relevant fraud signals**.
+
+---
+
+### 2. CI-triggering conditions
+
+You add a CI routing layer on top of your fraud pipeline:
+
+```pseudo
+function RUN_FRAUD_PIPELINE(identity_id):
+    identity = DB.getIdentityRecord(identity_id)
+    signals = []
+
+    signals += CHECK_DATA_CONSISTENCY(identity)
+    signals += CHECK_DOCUMENT_AUTHENTICITY(identity)
+    signals += CHECK_BEHAVIOR_ANOMALIES(identity)
+    signals += CHECK_MULTI_ID_SINGLE_FACE(identity)
+    signals += CHECK_SINGLE_ID_MULTI_FACE(identity)
+
+    risk_score = COMPUTE_RISK_SCORE(identity_id, signals)
+
+    if IS_CI_RELEVANT(identity, signals, risk_score):
+        ROUTE_TO_CI(identity_id, signals, risk_score)
+
+    return risk_score
+```
+
+`IS_CI_RELEVANT` checks things like:
+
+- **Label:** Identity linked to protected official / secret protocol  
+- **Label:** Biometric anomalies near time/location of failed attack  
+- **Label:** Synthetic clusters around sensitive nodes (e.g., government, security, defense)
+
+If true, `ROUTE_TO_CI` hands off to your CI DAG (`CI_TRIGGER → LEAK_INFER → …`).
+
+---
+
+### 3. CI use of biometric data
+
+Once routed, CI uses biometrics in three ways:
+
+1. **Leak inference anchor**  
+   - If the hidden official’s biometric template appears where it shouldn’t, CI asks:  
+     “Who had access to this template, and how did it get there?”
+
+2. **Network mapping**  
+   - Multi‑ID/single‑face clusters become **identity graphs**:  
+     one physical person, many legal/illegal identities.  
+   - CI uses these graphs to map movement, contacts, and potential handlers.
+
+3. **Canary deployment**  
+   - CI can deliberately **alter biometric‑related metadata** in different compartments:  
+     slightly different template IDs, enrollment timestamps, or access logs.  
+   - When a compromised compartment leaks, the downstream biometric usage pattern reveals which fingerprint escaped.
+
+---
+
+### 4. DAG-level integration
+
+Text DAG sketch:
+
+```
+BIO_IN → BIO_MATCH → MULTI_ID_FACE / SINGLE_ID_FACE → FRAUD_SIGNALS → RISK_AGG → CASE_MGMT
+                                                              │
+                                                              ▼
+                                                       CI_RELEVANCE_CHECK
+                                                              │
+                                                              ▼
+                                                          CI_TRIGGER
+                                                              ▼
+                                                          CI_DAG...
+```
+
+Key edges:
+
+- **BIO_MATCH → FRAUD_SIGNALS** — as you already have.  
+- **FRAUD_SIGNALS → CI_RELEVANCE_CHECK** — new CI routing node.  
+- **CI_RELEVANCE_CHECK → CI_TRIGGER** — only for identities/contexts tied to protected officials, sensitive systems, or failed‑attack windows.
+
+---
+
+### 5. Governance and rights
+
+To keep this sane and defensible:
+
+- **Strict policy gating:** CI routing only allowed for identities tied to high‑risk, high‑sensitivity contexts (e.g., attempted assassination, critical infrastructure).  
+- **Audit logging:** Every CI routing decision is logged (`AUDIT_LOG`) with policy IDs and justification.  
+- **Separation of concerns:** Fraud detection remains broad and rights‑preserving; CI is narrow, policy‑bound, and heavily overseen.
+
+---
+
+### 6. The core insight
+
+You’re turning **biometric fraud anomalies** into **counterintelligence signals**:
+
+- Synthetic identity clusters around protected officials → possible hostile reconnaissance or insider facilitation.  
+- Biometric reuse tied to failed attacks → possible leak pathways.  
+- Anomalous biometric presence in secure contexts → possible compromised compartment.
+
+Fraud becomes the **surface symptom**; CI becomes the **deep response**.
+
+Additional Options:
+
+- Formalize `IS_CI_RELEVANT` as a rule set / scoring function.  
+- Write a YAML/JSON spec for the integrated fraud+CI DAG.
