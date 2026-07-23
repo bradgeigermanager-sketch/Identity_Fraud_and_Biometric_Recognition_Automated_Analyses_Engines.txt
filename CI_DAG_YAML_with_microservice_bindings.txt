@@ -1,0 +1,204 @@
+Full CI DAG YAML** with **microservice bindings** for the CI branch (triggered by multi‑ID / single‑face anomalies and other CI‑relevant events). It assumes your the DAG already exists and hands off to `CI_RELEVANCE_CHECK`.
+
+```yaml
+ci_dag:
+  name: planetary_ci_pipeline
+  version: "1.0"
+
+  services:
+    CI_RELEVANCE_CHECK:
+      service_name: ci-relevance-eval-svc
+      endpoint: /ci/relevance/evaluate
+      method: POST
+
+    CI_TRIGGER:
+      service_name: ci-session-orchestrator-svc
+      endpoint: /ci/session/start
+      method: POST
+
+    LEAK_INFER:
+      service_name: leak-inference-svc
+      endpoint: /ci/leak/infer
+      method: POST
+
+    COMPART_MAP:
+      service_name: compartment-mapping-svc
+      endpoint: /ci/compartments/map
+      method: POST
+
+    CANDIDATE_SET:
+      service_name: suspect-graph-svc
+      endpoint: /ci/suspects/graph
+      method: POST
+
+    CANARY_INJECT:
+      service_name: canary-injection-svc
+      endpoint: /ci/canary/plan
+      method: POST
+
+    OBSERVE_PROPAGATION:
+      service_name: leak-propagation-observer-svc
+      endpoint: /ci/leak/observe
+      method: POST
+
+    NETWORK_EXPAND:
+      service_name: hostile-network-expand-svc
+      endpoint: /ci/network/expand
+      method: POST
+
+    CI_DECISION:
+      service_name: ci-decision-engine-svc
+      endpoint: /ci/decision
+      method: POST
+
+    AUDIT_LOG:
+      service_name: audit-log-svc
+      endpoint: /audit/log
+      method: POST
+
+    POLICY_ENF:
+      service_name: policy-enforcement-svc
+      endpoint: /policy/enforce
+      method: POST
+
+  nodes:
+    - id: CI_RELEVANCE_CHECK
+      type: decision
+      service: CI_RELEVANCE_CHECK
+      inputs:
+        - identity_record
+        - identity_risk_score
+        - fraud_signal
+        - ci_context
+      outputs:
+        - ci_trigger_event
+
+    - id: CI_TRIGGER
+      type: event
+      service: CI_TRIGGER
+      inputs:
+        - ci_trigger_event
+      outputs:
+        - ci_session
+
+    - id: LEAK_INFER
+      type: compute
+      service: LEAK_INFER
+      inputs:
+        - ci_session
+        - fraud_case
+        - fraud_signal
+      outputs:
+        - leak_signature
+
+    - id: COMPART_MAP
+      type: compute
+      service: COMPART_MAP
+      inputs:
+        - leak_signature
+        - internal_compartments
+      outputs:
+        - compartment_set
+
+    - id: CANDIDATE_SET
+      type: compute
+      service: CANDIDATE_SET
+      inputs:
+        - compartment_set
+        - access_logs
+      outputs:
+        - suspect_graph
+
+    - id: CANARY_INJECT
+      type: compute
+      service: CANARY_INJECT
+      inputs:
+        - compartment_set
+        - suspect_graph
+      outputs:
+        - canary_plan
+
+    - id: OBSERVE_PROPAGATION
+      type: compute
+      service: OBSERVE_PROPAGATION
+      inputs:
+        - canary_plan
+        - external_intel_streams
+      outputs:
+        - leak_path_identified
+
+    - id: NETWORK_EXPAND
+      type: compute
+      service: NETWORK_EXPAND
+      inputs:
+        - leak_path_identified
+        - external_intel_streams
+      outputs:
+        - hostile_network_map
+
+    - id: CI_DECISION
+      type: decision
+      service: CI_DECISION
+      inputs:
+        - hostile_network_map
+        - leak_path_identified
+        - policy_constraints
+      outputs:
+        - ci_action_plan
+
+    - id: AUDIT_LOG
+      type: log
+      service: AUDIT_LOG
+      inputs:
+        - node_execution_event
+      outputs:
+        - audit_log_entry
+
+    - id: POLICY_ENF
+      type: guard
+      service: POLICY_ENF
+      inputs:
+        - execution_request
+        - access_policy
+      outputs:
+        - execution_authorized
+
+  edges:
+    - from: RISK_AGG          # from fraud DAG
+      to: CI_RELEVANCE_CHECK
+
+    - from: CI_RELEVANCE_CHECK
+      to: CI_TRIGGER
+
+    - from: CI_TRIGGER
+      to: LEAK_INFER
+
+    - from: LEAK_INFER
+      to: COMPART_MAP
+
+    - from: COMPART_MAP
+      to: CANDIDATE_SET
+
+    - from: CANDIDATE_SET
+      to: CANARY_INJECT
+
+    - from: CANARY_INJECT
+      to: OBSERVE_PROPAGATION
+
+    - from: OBSERVE_PROPAGATION
+      to: NETWORK_EXPAND
+
+    - from: NETWORK_EXPAND
+      to: CI_DECISION
+
+    - from: CI_DECISION
+      to: AUDIT_LOG
+
+    - from: RISK_AGG          # fraud side
+      to: AUDIT_LOG
+
+    - from: CI_TRIGGER
+      to: POLICY_ENF
+```
+
+Also available: a Kubernetes deployment binding these services to namespaces and security policies.
