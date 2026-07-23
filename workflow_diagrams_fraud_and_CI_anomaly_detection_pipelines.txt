@@ -1,0 +1,185 @@
+### Overview
+
+Here are **end‑to‑end sequence diagrams** for the key flows:
+
+- Fraud‑only pipeline  
+- Fraud → CI routing (biometric/attack‑proximate case)  
+- CI exploit path (keep mole, expand network)  
+- CI neutralize path (burn mole, public win)  
+- Canary injection and leak‑path identification loop  
+
+All diagrams are in text UML‑style so you can drop them into tooling (PlantUML, Mermaid, etc.).
+
+---
+
+### 1. Fraud‑only pipeline (no CI relevance)
+
+```text
+Participant Client
+Participant ID_IN
+Participant DOC_IN
+Participant BEHAV_IN
+Participant BIO_IN
+Participant DATA_CONSIST
+Participant DOC_AUTH
+Participant BEHAV_ANOM
+Participant MULTI_ID_FACE
+Participant SINGLE_ID_FACE
+Participant RISK_AGG
+Participant CASE_MGMT
+Participant AUDIT_LOG
+Participant POLICY_ENF
+
+Client -> ID_IN: submit identity_record
+ID_IN -> POLICY_ENF: check access_policy
+POLICY_ENF --> ID_IN: execution_authorized
+ID_IN --> DATA_CONSIST: IdentityRecordIngested
+
+Client -> DOC_IN: submit document_artifact
+DOC_IN -> POLICY_ENF: check access_policy
+POLICY_ENF --> DOC_IN: execution_authorized
+DOC_IN --> DATA_CONSIST: DocumentArtifactIngested
+DOC_IN --> DOC_AUTH: DocumentArtifactIngested
+
+Client -> BEHAV_IN: submit behavior_event
+BEHAV_IN -> POLICY_ENF: check access_policy
+POLICY_ENF --> BEHAV_IN: execution_authorized
+BEHAV_IN --> BEHAV_ANOM: BehaviorEventIngested
+
+Client -> BIO_IN: submit biometric_template
+BIO_IN -> POLICY_ENF: check access_policy
+POLICY_ENF --> BIO_IN: execution_authorized
+BIO_IN --> MULTI_ID_FACE: BiometricTemplateIngested
+BIO_IN --> SINGLE_ID_FACE: BiometricTemplateIngested
+
+DATA_CONSIST --> RISK_AGG: FraudSignalGenerated(data_consistency)
+DOC_AUTH --> RISK_AGG: FraudSignalGenerated(doc_auth)
+BEHAV_ANOM --> RISK_AGG: FraudSignalGenerated(behavior_anomaly)
+MULTI_ID_FACE --> RISK_AGG: FraudSignalGenerated(multi_id_face)
+SINGLE_ID_FACE --> RISK_AGG: FraudSignalGenerated(single_id_face)
+
+RISK_AGG --> CASE_MGMT: RiskScoreComputed
+CASE_MGMT --> AUDIT_LOG: FraudCaseUpdated
+RISK_AGG --> AUDIT_LOG: RiskScoreComputed
+```
+
+---
+
+### 2. Fraud → CI routing (CI‑relevant identity)
+
+```text
+Participant RISK_AGG
+Participant CI_RELEVANCE_CHECK
+Participant CI_TRIGGER
+Participant LEAK_INFER
+Participant COMPART_MAP
+Participant CANDIDATE_SET
+Participant CANARY_INJECT
+Participant OBSERVE_PROPAGATION
+Participant NETWORK_EXPAND
+Participant CI_DECISION
+Participant AUDIT_LOG
+Participant POLICY_ENF
+
+RISK_AGG --> CI_RELEVANCE_CHECK: RiskScoreComputed + fraud_signals + ci_context
+
+CI_RELEVANCE_CHECK -> POLICY_ENF: check CI routing policy
+POLICY_ENF --> CI_RELEVANCE_CHECK: execution_authorized
+
+CI_RELEVANCE_CHECK --> CI_TRIGGER: CITriggerEvent(ci_score >= threshold)
+
+CI_TRIGGER --> LEAK_INFER: CISessionStarted
+LEAK_INFER --> COMPART_MAP: LeakSignatureInferred
+COMPART_MAP --> CANDIDATE_SET: CompartmentSetIdentified
+CANDIDATE_SET --> CANARY_INJECT: SuspectGraphBuilt
+CANARY_INJECT --> OBSERVE_PROPAGATION: CanaryPlanGenerated
+OBSERVE_PROPAGATION --> NETWORK_EXPAND: LeakPathObserved
+NETWORK_EXPAND --> CI_DECISION: HostileNetworkExpanded
+
+CI_DECISION --> AUDIT_LOG: CIDecisionIssued
+RISK_AGG --> AUDIT_LOG: RiskScoreComputed
+```
+
+---
+
+### 3. CI exploit path (keep mole, expand network)
+
+```text
+Participant CI_DECISION
+Participant NETWORK_EXPAND
+Participant CANARY_INJECT
+Participant OBSERVE_PROPAGATION
+Participant AUDIT_LOG
+Participant POLICY_ENF
+
+CI_DECISION: evaluate hostile_network_map, leak_path_identified
+CI_DECISION -> POLICY_ENF: check exploit policy
+POLICY_ENF --> CI_DECISION: exploit_allowed
+
+CI_DECISION: action = "exploit"
+CI_DECISION --> AUDIT_LOG: CIDecisionIssued(exploit)
+
+loop Exploit cycle
+  CI_DECISION --> CANARY_INJECT: request new canary_plan
+  CANARY_INJECT --> OBSERVE_PROPAGATION: CanaryPlanGenerated
+  OBSERVE_PROPAGATION --> NETWORK_EXPAND: LeakPathObserved
+  NETWORK_EXPAND --> CI_DECISION: HostileNetworkExpanded(updated)
+  CI_DECISION --> AUDIT_LOG: CIDecisionIssued(exploit_cycle_update)
+end
+```
+
+---
+
+### 4. CI neutralize path (burn mole, public win)
+
+```text
+Participant CI_DECISION
+Participant NETWORK_EXPAND
+Participant POLICY_ENF
+Participant AUDIT_LOG
+Participant ExternalOps (arrest/disciplinary ops)
+Participant PublicComm (public communication channel)
+
+CI_DECISION: evaluate hostile_network_map, leak_path_identified
+CI_DECISION -> POLICY_ENF: check neutralize policy
+POLICY_ENF --> CI_DECISION: neutralize_allowed
+
+CI_DECISION: action = "neutralize"
+CI_DECISION --> AUDIT_LOG: CIDecisionIssued(neutralize)
+
+CI_DECISION --> ExternalOps: ci_action_plan(targets, timing)
+ExternalOps: execute arrests / removals / system lockdowns
+
+CI_DECISION --> PublicComm: optional narrative package (failed plot, state success)
+PublicComm: broadcast controlled narrative
+
+ExternalOps --> AUDIT_LOG: ops_execution_summary
+PublicComm --> AUDIT_LOG: narrative_release_summary
+```
+
+---
+
+### 5. Canary injection and leak‑path identification loop
+
+```text
+Participant CANARY_INJECT
+Participant InternalSystems (compartments)
+Participant OBSERVE_PROPAGATION
+Participant ExternalIntelStreams
+Participant NETWORK_EXPAND
+Participant AUDIT_LOG
+
+CANARY_INJECT: generate canaries per compartment
+CANARY_INJECT --> InternalSystems: apply canary fingerprints
+CANARY_INJECT --> AUDIT_LOG: CanaryPlanGenerated
+
+loop Monitoring window
+  ExternalIntelStreams --> OBSERVE_PROPAGATION: hostile chatter / behavior / signals
+  OBSERVE_PROPAGATION: match leaked_fingerprint to compartment_id
+  OBSERVE_PROPAGATION --> NETWORK_EXPAND: LeakPathObserved
+  OBSERVE_PROPAGATION --> AUDIT_LOG: LeakPathObserved
+end
+
+NETWORK_EXPAND: update hostile_network_map using leak_path
+NETWORK_EXPAND --> AUDIT_LOG: HostileNetworkExpanded
+```
