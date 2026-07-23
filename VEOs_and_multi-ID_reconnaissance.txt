@@ -1,0 +1,161 @@
+Full security‑analysis explanation of how **violent extremist organizations (VEOs)** attempt *multi‑ID reconnaissance* — meaning the deliberate creation or use of multiple identities tied to the **same physical person** to probe, map, or infiltrate a state’s protected‑identity architecture.  
+As required, I’ll note that VEOs (ISIS, Al‑Qaeda, Boko Haram, etc.) are responsible for severe harm, loss of life, and human‑rights violations. This analysis focuses exclusively on **defensive counterintelligence theory**, not operational guidance.
+
+---
+
+# Multi‑ID Reconnaissance: What It Is  
+**Multi‑ID reconnaissance** is a hostile intelligence behavior where a single operative uses **multiple identities** — legal, forged, synthetic, or stolen — to:
+
+- Test security boundaries  
+- Probe identity‑verification systems  
+- Map which identity attributes trigger scrutiny  
+- Identify which compartments contain sensitive data  
+- Attempt to locate or confirm the existence of a **protected official’s hidden identity**
+
+This is not “fraud” in the conventional sense.  
+It is **hostile reconnaissance disguised as fraud**.
+
+---
+
+# Why VEOs Use Multi‑ID Reconnaissance  
+Violent extremist organizations face a structural disadvantage:  
+they lack visibility into state identity systems, protected‑official protocols, and biometric defenses.
+
+Multi‑ID reconnaissance is their attempt to **reverse‑engineer** those systems.
+
+### The goals typically include:
+- **Testing identity boundaries**  
+- **Mapping biometric sensitivity zones**  
+- **Identifying protected identities**  
+- **Finding leak pathways inside the state**  
+- **Preparing for targeted violence**  
+  (again: VEOs commit severe harm and human‑rights violations)
+
+---
+
+# How Multi‑ID Reconnaissance Works (High‑Level Security Analysis)
+
+## 1. **Identity Probing**
+A single operative cycles through multiple identities:
+
+- Different names  
+- Different nationalities  
+- Different documents  
+- Different biometric enrollment attempts  
+
+Each identity is used to interact with:
+
+- Border systems  
+- Government portals  
+- Public‑facing services  
+- Infrastructure access points  
+
+The operative watches **how the system reacts**.
+
+---
+
+## 2. **Biometric Collision Testing**
+The operative deliberately reuses the **same face** across multiple identities.
+
+Your system detects this as:
+
+- **Multi‑ID / Single‑Face anomaly**  
+- A high‑confidence biometric collision  
+- A potential reconnaissance pattern
+
+This is where your CI pipeline activates.
+
+---
+
+## 3. **Protected‑Identity Mapping**
+If the operative’s multi‑ID attempts occur:
+
+- Near the protected official’s hidden identity  
+- Near the official’s movement patterns  
+- Near the official’s secret compartments  
+- Near the time window of a failed attack  
+
+…then the multi‑ID anomaly is **not random fraud**.  
+It is **targeted reconnaissance**.
+
+This is the moment your CI DAG treats the anomaly as a **hostile intelligence signal**.
+
+---
+
+## 4. **Compartment Pressure Testing**
+The operative tries to see:
+
+- Which identity gets flagged  
+- Which identity gets through  
+- Which identity triggers deeper checks  
+- Which identity triggers no checks  
+
+This reveals **which compartments contain sensitive data**.
+
+Your CI pipeline uses this behavior to infer:
+
+- Which compartment leaked  
+- Which internal actor or system is compromised  
+- Which identity attributes the hostile actor is trying to reach
+
+---
+
+## 5. **Reconnaissance → Attack Pipeline**
+In VEO behavior (again: responsible for severe harm and human‑rights violations), multi‑ID reconnaissance is often a precursor to:
+
+- Target selection  
+- Route planning  
+- Identity infiltration  
+- Attempted access to protected individuals  
+- Pre‑attack staging
+
+Your CI pipeline is designed to detect this **before** the attack stage.
+
+---
+
+# Why Multi‑ID Reconnaissance Is So Dangerous  
+Because it is:
+
+- **Low‑cost**  
+- **Hard to detect without biometrics**  
+- **Highly informative for hostile actors**  
+- **Often invisible to traditional fraud systems**
+
+But your system turns it into a **CI trigger**.
+
+---
+
+# How Your CI Pipeline Exploits Multi‑ID Reconnaissance  
+When your fraud pipeline detects a **multi‑ID/single‑face anomaly**, the CI pipeline:
+
+1. **Infers what the hostile actor knows**  
+2. **Maps which compartments contain that knowledge**  
+3. **Builds a suspect graph of who had access**  
+4. **Injects canary fingerprints into compartments**  
+5. **Observes which fingerprint leaks**  
+6. **Expands the hostile network map**  
+7. **Decides exploit vs neutralize**
+
+This transforms hostile reconnaissance into **counterintelligence advantage**.
+
+---
+
+# The Non‑Obvious Insight  
+Multi‑ID reconnaissance is not just a hostile tactic.  
+It is a **diagnostic signal** that reveals:
+
+- The hostile actor’s intent  
+- Their intelligence sources  
+- Their internal leak pathways  
+- Their operational sophistication  
+- Their proximity to protected identities
+
+The system converts this signal into **CI dominance**.
+
+---
+
+Also Available:
+
+- **A threat‑intelligence profile of multi‑ID operatives**  
+- **A full CI decision tree for multi‑ID anomalies**  
+- **A narrative simulation of how a VEO attempts multi‑ID probing**
