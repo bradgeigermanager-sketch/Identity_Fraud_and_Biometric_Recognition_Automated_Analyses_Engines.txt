@@ -1,0 +1,300 @@
+Below is the **full microservice mapping** for the integrated Fraud‑Detection + Counterintelligence (CI) DAG.  
+This turns each DAG node into a **real, deployable microservice**, with clear boundaries, responsibilities, and data contracts.  
+Analytical and structured — exactly intended for clarity — embed links on the key concepts so you can jump deeper into any subsystem.
+
+---
+
+# Core Architectural Takeaway  
+Each DAG node becomes a **single‑responsibility microservice** with:
+
+- A narrow, well‑defined function  
+- A clear input/output schema  
+- Stateless compute (except where persistence is required)  
+- Event‑driven orchestration  
+- Audit + policy enforcement hooks
+
+This creates a **planetary‑scale identity + CI system** where fraud signals, biometric anomalies, and CI triggers flow through a distributed architecture.
+
+---
+
+# 1. Microservice Map (Fraud + CI)
+
+## A. Ingestion Layer Microservices
+
+### **1. Identity Ingestion Service**  
+**Purpose:** Normalize, validate, and ingest identity records.  
+**DAG Node:** `ID_IN`  
+**Key Ops:**  
+- Schema validation  
+- Provenance tagging  
+- Versioning  
+- Policy enforcement  
+**Guided Link:** identity ingestion
+
+---
+
+### **2. Document Ingestion Service**  
+**DAG Node:** `DOC_IN`  
+**Ops:**  
+- OCR  
+- Metadata extraction  
+- Authenticity pre-check  
+**Guided Link:** document ingestion
+
+---
+
+### **3. Behavioral Event Ingestion Service**  
+**DAG Node:** `BEHAV_IN`  
+**Ops:**  
+- Normalize behavioral telemetry  
+- Detect out-of-band events  
+**Guided Link:** behavior ingestion
+
+---
+
+### **4. Biometric Ingestion Service**  
+**DAG Node:** `BIO_IN`  
+**Ops:**  
+- Template quantization  
+- Secure enclave storage  
+- Template hashing  
+**Guided Link:** biometric ingestion
+
+---
+
+# B. Fraud Signal Layer Microservices
+
+### **5. Data Consistency Service**  
+**DAG Node:** `DATA_CONSIST`  
+**Ops:**  
+- Cross-field consistency checks  
+- Identity graph validation  
+**Guided Link:** data consistency
+
+---
+
+### **6. Document Authenticity Service**  
+**DAG Node:** `DOC_AUTH`  
+**Ops:**  
+- Forgery detection  
+- Template matching  
+**Guided Link:** document authenticity
+
+---
+
+### **7. Behavioral Anomaly Service**  
+**DAG Node:** `BEHAV_ANOM`  
+**Ops:**  
+- Outlier detection  
+- Temporal anomaly scoring  
+**Guided Link:** behavior anomaly
+
+---
+
+### **8. Multi‑ID Single‑Face Service**  
+**DAG Node:** `MULTI_ID_FACE`  
+**Ops:**  
+- Face‑embedding clustering  
+- Identity collision detection  
+**Guided Link:** multi ID face
+
+---
+
+### **9. Single‑ID Multi‑Face Service**  
+**DAG Node:** `SINGLE_ID_FACE`  
+**Ops:**  
+- Impersonation detection  
+- Template divergence scoring  
+**Guided Link:** single ID multi face
+
+---
+
+# C. Risk Scoring + Case Management Microservices
+
+### **10. Risk Aggregation Service**  
+**DAG Node:** `RISK_AGG`  
+**Ops:**  
+- Weighted fraud signal aggregation  
+- Risk normalization  
+**Guided Link:** risk aggregation
+
+---
+
+### **11. Fraud Case Management Service**  
+**DAG Node:** `CASE_MGMT`  
+**Ops:**  
+- Case lifecycle  
+- Evidence bundling  
+- Severity classification  
+**Guided Link:** fraud case management
+
+---
+
+# D. CI Routing Microservice
+
+### **12. CI Relevance Evaluation Service**  
+**DAG Node:** `CI_RELEVANCE_CHECK`  
+**Ops:**  
+- Apply CI scoring rules  
+- Gate CI routing via policy  
+**Guided Link:** CI relevance
+
+---
+
+# E. Counterintelligence Microservices (CI DAG)
+
+### **13. CI Session Orchestrator**  
+**DAG Node:** `CI_TRIGGER`  
+**Ops:**  
+- Initialize CI workflow  
+- Bind context (attack window, protected identity)  
+**Guided Link:** CI trigger
+
+---
+
+### **14. Leak Inference Service**  
+**DAG Node:** `LEAK_INFER`  
+**Ops:**  
+- Infer what intel the hostile actor possessed  
+- Compare against internal data structures  
+**Guided Link:** leak inference
+
+---
+
+### **15. Compartment Mapping Service**  
+**DAG Node:** `COMPART_MAP`  
+**Ops:**  
+- Identify compartments containing leaked info  
+- Build compartment graph  
+**Guided Link:** compartment mapping
+
+---
+
+### **16. Suspect Graph Builder**  
+**DAG Node:** `CANDIDATE_SET`  
+**Ops:**  
+- Build graph of individuals/systems with access  
+- Rank suspects by exposure  
+**Guided Link:** suspect graph
+
+---
+
+### **17. Canary Injection Service**  
+**DAG Node:** `CANARY_INJECT`  
+**Ops:**  
+- Generate unique false fingerprints  
+- Inject into compartments  
+**Guided Link:** canary injection
+
+---
+
+### **18. Leak Propagation Observer**  
+**DAG Node:** `OBSERVE_PROPAGATION`  
+**Ops:**  
+- Monitor hostile behavior  
+- Detect which canary fingerprint leaked  
+**Guided Link:** leak propagation
+
+---
+
+### **19. Hostile Network Expansion Service**  
+**DAG Node:** `NETWORK_EXPAND`  
+**Ops:**  
+- Map hostile network via leak path  
+- Identify nodes, handlers, safe houses  
+**Guided Link:** network expansion
+
+---
+
+### **20. CI Decision Engine**  
+**DAG Node:** `CI_DECISION`  
+**Ops:**  
+- Decide exploit vs neutralize  
+- Generate CI action plan  
+**Guided Link:** CI decision
+
+---
+
+# F. Governance Microservices
+
+### **21. Audit Logging Service**  
+**DAG Node:** `AUDIT_LOG`  
+**Ops:**  
+- Immutable event logging  
+- Compliance reporting  
+**Guided Link:** audit logging
+
+---
+
+### **22. Policy Enforcement Service**  
+**DAG Node:** `POLICY_ENF`  
+**Ops:**  
+- Access control  
+- Legal/ethical gating  
+**Guided Link:** policy enforcement
+
+---
+
+# 2. Microservice Deployment Topology
+
+### **Cluster A — Identity & Fraud Services**  
+- Identity Ingestion  
+- Document Ingestion  
+- Behavioral Ingestion  
+- Biometric Ingestion  
+- Fraud Signal Services  
+- Risk Aggregation  
+- Case Management
+
+These run in a **high‑availability cluster** with horizontal scaling.
+
+---
+
+### **Cluster B — CI Services**  
+- CI Trigger  
+- Leak Inference  
+- Compartment Mapping  
+- Suspect Graph  
+- Canary Injection  
+- Propagation Observer  
+- Network Expansion  
+- CI Decision Engine
+
+These run in a **restricted, hardened enclave cluster** with:
+
+- Zero external exposure  
+- Strict policy gating  
+- Encrypted internal messaging  
+- Mandatory audit logging
+
+---
+
+### **Cluster C — Governance Services**  
+- Audit Logging  
+- Policy Enforcement
+
+These run in a **compliance‑grade cluster** with:
+
+- Immutable storage  
+- Multi‑jurisdictional audit frameworks  
+- Policy versioning
+
+---
+
+# 3. The Non‑Obvious Insight  
+No longer only “fraud detection with CI attached.”  
+It is a **dual‑architecture intelligence engine**:
+
+- Fraud pipeline = *surface anomaly detection*  
+- CI pipeline = *deep adversary mapping and deception operations*
+
+Biometric anomalies become **intelligence signals**, not just fraud indicators.
+
+---
+
+# Also Available:
+
+- **A full microservice dependency graph**  
+- **API contracts for each microservice**  
+- **Event schemas for inter‑service messaging**  
+- **A Kubernetes deployment blueprint**
