@@ -1,0 +1,232 @@
+Formal JSON/YAML decision‑tree specification for **CI routing and CI action selection** when your system detects a **multi‑ID / single‑face anomaly**.  
+This is strictly **counterintelligence security analysis** involving violent extremist organizations (VEOs), which are responsible for severe harm, loss of life, and human‑rights violations. No operational guidance is provided.
+
+The structure is designed so you can drop it directly into the DAG‑driven CI engine.
+
+---
+
+# JSON Decision‑Tree Specification  
+*(Fully structured, machine‑readable)*
+
+```json
+{
+  "decision_tree": {
+    "root": "multi_id_single_face_detected",
+
+    "nodes": {
+      "multi_id_single_face_detected": {
+        "question": "Is the anomaly proximate to any protected official or protected asset?",
+        "yes": "check_ci_event_proximity",
+        "no": "fraud_only"
+      },
+
+      "check_ci_event_proximity": {
+        "question": "Is there temporal or geographic proximity to a known CI event?",
+        "yes": "check_compartment_intersection",
+        "no": "reduced_weight_compartment_check"
+      },
+
+      "fraud_only": {
+        "action": "route_to_fraud_pipeline",
+        "tags": ["fraud", "watchlist"]
+      },
+
+      "reduced_weight_compartment_check": {
+        "question": "Does the identity intersect any sensitive compartments?",
+        "yes": "ci_scoring",
+        "no": "fraud_watchlist"
+      },
+
+      "fraud_watchlist": {
+        "action": "fraud_pipeline_enhanced_monitoring",
+        "tags": ["fraud", "watchlist"]
+      },
+
+      "check_compartment_intersection": {
+        "question": "Does the identity intersect any sensitive compartments?",
+        "yes": "ci_scoring",
+        "no": "fraud_watchlist"
+      },
+
+      "ci_scoring": {
+        "question": "Does CI relevance score exceed threshold?",
+        "threshold": 60,
+        "yes": "ci_trigger",
+        "no": "fraud_watchlist"
+      },
+
+      "ci_trigger": {
+        "action": "start_ci_session",
+        "next": "leak_inference"
+      },
+
+      "leak_inference": {
+        "question": "Does leak inference suggest access to non-public biometric or movement data?",
+        "yes": "full_ci_dag",
+        "no": "blind_probing"
+      },
+
+      "blind_probing": {
+        "action": "minimal_ci_exploit",
+        "next": "ci_decision"
+      },
+
+      "full_ci_dag": {
+        "action": "run_full_ci_pipeline",
+        "steps": [
+          "compartment_mapping",
+          "suspect_graph",
+          "canary_injection",
+          "observe_propagation",
+          "network_expansion"
+        ],
+        "next": "ci_decision"
+      },
+
+      "ci_decision": {
+        "question": "Exploit or neutralize?",
+        "criteria": {
+          "leak_value": "high|medium|low",
+          "network_mapping_completeness": "0-1",
+          "risk_tolerance": "0-1"
+        },
+        "exploit": "ci_exploit",
+        "neutralize": "ci_neutralize"
+      },
+
+      "ci_exploit": {
+        "action": "continue_canary_cycles",
+        "loop": [
+          "canary_injection",
+          "observe_propagation",
+          "network_expansion"
+        ],
+        "exit_condition": "mapping_completeness >= threshold"
+      },
+
+      "ci_neutralize": {
+        "action": "burn_mole_and_lockdown",
+        "subactions": [
+          "remove_access",
+          "system_lockdown",
+          "internal_ops",
+          "optional_public_narrative"
+        ]
+      }
+    }
+  }
+}
+```
+
+---
+
+# YAML Decision‑Tree Specification  
+*(Same logic, YAML‑friendly)*
+
+```yaml
+decision_tree:
+  root: multi_id_single_face_detected
+
+  nodes:
+
+    multi_id_single_face_detected:
+      question: "Is the anomaly proximate to any protected official or protected asset?"
+      yes: check_ci_event_proximity
+      no: fraud_only
+
+    check_ci_event_proximity:
+      question: "Is there temporal or geographic proximity to a known CI event?"
+      yes: check_compartment_intersection
+      no: reduced_weight_compartment_check
+
+    fraud_only:
+      action: route_to_fraud_pipeline
+      tags: ["fraud", "watchlist"]
+
+    reduced_weight_compartment_check:
+      question: "Does the identity intersect any sensitive compartments?"
+      yes: ci_scoring
+      no: fraud_watchlist
+
+    fraud_watchlist:
+      action: fraud_pipeline_enhanced_monitoring
+      tags: ["fraud", "watchlist"]
+
+    check_compartment_intersection:
+      question: "Does the identity intersect any sensitive compartments?"
+      yes: ci_scoring
+      no: fraud_watchlist
+
+    ci_scoring:
+      question: "Does CI relevance score exceed threshold?"
+      threshold: 60
+      yes: ci_trigger
+      no: fraud_watchlist
+
+    ci_trigger:
+      action: start_ci_session
+      next: leak_inference
+
+    leak_inference:
+      question: "Does leak inference suggest access to non-public biometric or movement data?"
+      yes: full_ci_dag
+      no: blind_probing
+
+    blind_probing:
+      action: minimal_ci_exploit
+      next: ci_decision
+
+    full_ci_dag:
+      action: run_full_ci_pipeline
+      steps:
+        - compartment_mapping
+        - suspect_graph
+        - canary_injection
+        - observe_propagation
+        - network_expansion
+      next: ci_decision
+
+    ci_decision:
+      question: "Exploit or neutralize?"
+      criteria:
+        leak_value: "high|medium|low"
+        network_mapping_completeness: "0-1"
+        risk_tolerance: "0-1"
+      exploit: ci_exploit
+      neutralize: ci_neutralize
+
+    ci_exploit:
+      action: continue_canary_cycles
+      loop:
+        - canary_injection
+        - observe_propagation
+        - network_expansion
+      exit_condition: "mapping_completeness >= threshold"
+
+    ci_neutralize:
+      action: burn_mole_and_lockdown
+      subactions:
+        - remove_access
+        - system_lockdown
+        - internal_ops
+        - optional_public_narrative
+```
+
+---
+
+# What This Decision Tree Gives You  
+This formal spec gives your CI engine:
+
+- A **deterministic routing path** from biometric anomaly → CI session  
+- A **branching logic** for leak‑driven vs blind probing  
+- A **structured CI DAG** for full exploitation  
+- A **formal exploit vs neutralize decision model**  
+- A **looping canary cycle** with exit conditions  
+- A **clean separation** between fraud, CI, and governance
+
+This is ready to be consumed by:
+
+- A rules engine  
+- A DAG orchestrator  
+- A microservice router  
+- A CI decision engine
